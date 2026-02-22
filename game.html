@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocab Dice Game</title>
+    <script src="words.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #333;
+        }
+
+        /* Menu Screen */
+        #menu-screen {
+            text-align: center;
+        }
+
+        #new-game-btn {
+            padding: 20px 40px;
+            font-size: 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #new-game-btn:hover {
+            background-color: #45a049;
+        }
+
+        /* Game Screen */
+        #game-screen {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            background-color: black;
+            position: relative;
+        }
+
+        .player-score {
+            position: absolute;
+            top: 20px;
+            color: white;
+            font-size: 32px;
+            padding: 20px;
+        }
+
+        #player1-score {
+            left: 20px;
+        }
+
+        #player2-score {
+            right: 20px;
+        }
+
+        .player-name-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .player-name {
+            font-weight: bold;
+        }
+
+        .edit-name-btn {
+            padding: 5px 10px;
+            font-size: 12px;
+            background-color: #555;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .edit-name-btn:hover {
+            background-color: #777;
+        }
+
+        .score {
+            font-size: 48px;
+        }
+
+        /* Game Area */
+        #game-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+        }
+
+        #current-turn {
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+
+        /* Roll Phase */
+        #roll-phase {
+            display: block;
+        }
+
+        #roll-btn {
+            padding: 20px 50px;
+            font-size: 28px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #roll-btn:hover {
+            background-color: #c0392b;
+        }
+
+        #dice-result {
+            font-size: 72px;
+            margin-top: 20px;
+            min-height: 80px;
+        }
+
+        /* Question Phase */
+        #question-phase {
+            display: none;
+        }
+
+        #rolled-value {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #f1c40f;
+        }
+
+        #question-text {
+            font-size: 28px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #222;
+            border-radius: 10px;
+        }
+
+        .answer-btn {
+            padding: 15px 40px;
+            font-size: 24px;
+            margin: 0 15px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #correct-btn {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        #correct-btn:hover {
+            background-color: #1e8449;
+        }
+
+        #wrong-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        #wrong-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .active-player {
+            border: 3px solid #f1c40f;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Menu Screen -->
+    <div id="menu-screen">
+        <button id="new-game-btn">New Game</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen">
+        <div id="player1-score" class="player-score">
+            <div class="player-name-row">
+                <span class="player-name">Player 1</span>
+                <button class="edit-name-btn" onclick="editPlayerName(1)">Edit</button>
+            </div>
+            <div class="score">0</div>
+        </div>
+        <div id="player2-score" class="player-score">
+            <div class="player-name-row">
+                <span class="player-name">Player 2</span>
+                <button class="edit-name-btn" onclick="editPlayerName(2)">Edit</button>
+            </div>
+            <div class="score">0</div>
+        </div>
+
+        <div id="game-area">
+            <div id="current-turn">Player 1's Turn</div>
+
+            <!-- Roll Phase -->
+            <div id="roll-phase">
+                <button id="roll-btn">Roll</button>
+                <div id="dice-result"></div>
+            </div>
+
+            <!-- Question Phase -->
+            <div id="question-phase">
+                <div id="rolled-value">You rolled: 0</div>
+                <div id="question-text">Vocab Question Here</div>
+                <div>
+                    <button id="correct-btn" class="answer-btn">Correct</button>
+                    <button id="wrong-btn" class="answer-btn">Wrong</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let player1Score = 0;
+        let player2Score = 0;
+        let currentPlayer = 1;
+        let currentRoll = 0;
+        let currentWord = null;
+        let player1Name = "Player 1";
+        let player2Name = "Player 2";
+
+        // DOM elements
+        const menuScreen = document.getElementById('menu-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const newGameBtn = document.getElementById('new-game-btn');
+        const rollPhase = document.getElementById('roll-phase');
+        const questionPhase = document.getElementById('question-phase');
+        const rollBtn = document.getElementById('roll-btn');
+        const diceResult = document.getElementById('dice-result');
+        const rolledValue = document.getElementById('rolled-value');
+        const currentTurnDisplay = document.getElementById('current-turn');
+        const correctBtn = document.getElementById('correct-btn');
+        const wrongBtn = document.getElementById('wrong-btn');
+        const player1ScoreDiv = document.getElementById('player1-score');
+        const player2ScoreDiv = document.getElementById('player2-score');
+        const questionText = document.getElementById('question-text');
+
+        // Start new game
+        newGameBtn.addEventListener('click', () => {
+            // Reset scores
+            player1Score = 0;
+            player2Score = 0;
+            currentPlayer = 1;
+            currentRoll = 0;
+            updateScoreDisplay();
+            updateTurnDisplay();
+
+            // Switch screens
+            menuScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+
+            // Start in roll phase
+            showRollPhase();
+        });
+
+        // Roll button
+        rollBtn.addEventListener('click', () => {
+            currentRoll = Math.floor(Math.random() * 6) + 1;
+            diceResult.textContent = currentRoll;
+
+            // After a short delay, show question phase
+            setTimeout(() => {
+                showQuestionPhase();
+            }, 1000);
+        });
+
+        // Correct button
+        correctBtn.addEventListener('click', () => {
+            // Player 1 is learning - correct always gives points to Player 1
+            player1Score += currentRoll;
+
+            // Increase accuracy of the word (max 1.0)
+            if (currentWord) {
+                currentWord.accuracy = Math.min(1.0, currentWord.accuracy + 0.2);
+            }
+
+            endTurn();
+        });
+
+        // Wrong button
+        wrongBtn.addEventListener('click', () => {
+            // Wrong always gives points to Player 2 (opponent)
+            player2Score += currentRoll;
+
+            // Decrease accuracy of the word (min 0.0)
+            if (currentWord) {
+                currentWord.accuracy = Math.max(0.0, currentWord.accuracy - 0.1);
+            }
+
+            endTurn();
+        });
+
+        function showRollPhase() {
+            rollPhase.style.display = 'block';
+            questionPhase.style.display = 'none';
+            diceResult.textContent = '';
+        }
+
+        function showQuestionPhase() {
+            rollPhase.style.display = 'none';
+            questionPhase.style.display = 'block';
+            rolledValue.textContent = `You rolled: ${currentRoll}`;
+
+            // Pick a weighted random word (lower accuracy = more likely)
+            currentWord = getWeightedRandomWord();
+            questionText.textContent = `What does "${currentWord.french}" mean?`;
+        }
+
+        function getWeightedRandomWord() {
+            // Calculate weights: lower accuracy = higher weight
+            const weights = vocabWords.map(word => 1 - word.accuracy);
+            const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+
+            // Pick a random value in the total weight range
+            let random = Math.random() * totalWeight;
+
+            // Find which word this corresponds to
+            for (let i = 0; i < vocabWords.length; i++) {
+                random -= weights[i];
+                if (random <= 0) {
+                    return vocabWords[i];
+                }
+            }
+
+            // Fallback (shouldn't happen)
+            return vocabWords[vocabWords.length - 1];
+        }
+
+        function endTurn() {
+            updateScoreDisplay();
+
+            // Check for winner
+            if (player1Score >= 20) {
+                alert(`${player1Name} Wins!`);
+                returnToMenu();
+                return;
+            }
+            if (player2Score >= 20) {
+                alert(`${player2Name} Wins!`);
+                returnToMenu();
+                return;
+            }
+
+            // Switch player
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            updateTurnDisplay();
+            showRollPhase();
+        }
+
+        function returnToMenu() {
+            gameScreen.style.display = 'none';
+            menuScreen.style.display = 'flex';
+        }
+
+        function updateScoreDisplay() {
+            document.querySelector('#player1-score .score').textContent = player1Score;
+            document.querySelector('#player2-score .score').textContent = player2Score;
+        }
+
+        function updateTurnDisplay() {
+            const currentName = currentPlayer === 1 ? player1Name : player2Name;
+            currentTurnDisplay.textContent = `${currentName}'s Turn`;
+
+            // Highlight active player
+            if (currentPlayer === 1) {
+                player1ScoreDiv.classList.add('active-player');
+                player2ScoreDiv.classList.remove('active-player');
+            } else {
+                player1ScoreDiv.classList.remove('active-player');
+                player2ScoreDiv.classList.add('active-player');
+            }
+        }
+
+        function editPlayerName(playerNum) {
+            const currentName = playerNum === 1 ? player1Name : player2Name;
+            const newName = prompt(`Enter new name for ${currentName}:`, currentName);
+
+            if (newName && newName.trim()) {
+                if (playerNum === 1) {
+                    player1Name = newName.trim();
+                    document.querySelector('#player1-score .player-name').textContent = player1Name;
+                } else {
+                    player2Name = newName.trim();
+                    document.querySelector('#player2-score .player-name').textContent = player2Name;
+                }
+                updateTurnDisplay();
+            }
+        }
+    </script>
+</body>
+</html>
