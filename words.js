@@ -19,10 +19,9 @@ const vocabWords = [
     // Friends
     { french: "Le meilleur ami", english: "The best friend", accuracy: 0.0 },
     { french: "Un ami virtuel", english: "A virtuel friend", accuracy: 0.0 },
-    { french: "Un copain du sport", english: "A sport friend", accuracy: 0.0 },
     { french: "Un ami d'enfance", english: "A childhood friend", accuracy: 0.0 },
     { french: "S'entendre bien avec quelqu'un", english: "To get along well with someone", accuracy: 0.0 },
-    { french: "Aimer bien quelqu'un", english: "To like someone", accuracy: 0.0 },
+    { french: "Aimer bien quelqu'un", english: "To like someone", accuracy: 0.2 },
     { french: "Se disputer avec quelqu'un", english: "To argue with someone", accuracy: 0.0 },
     { french: "Avoir grandi avec quelqu'un", english: "To have grown up with someone", accuracy: 0.0 },
     { french: "Se voir tous les jours", english: "To see each other everyday", accuracy: 0.0 },
@@ -102,7 +101,7 @@ const vocabWords = [
 
     // Reactions / Opinions
     { french: "J'ai adore", english: "I loved it", accuracy: 0.0 },
-    { french: "Ca ta plu?", english: "Did you like it?", accuracy: 0.0 },
+    { french: "Ca t'a plu?", english: "Did you like it?", accuracy: 0.0 },
     { french: "Ca ma beaucoup plu !", english: "I liked it a lot", accuracy: 0.0 },
     { french: "C'est genial", english: "It's awesome", accuracy: 0.0 },
     { french: "C'etait super interessant", english: "It was super interesting", accuracy: 0.0 },
@@ -117,7 +116,7 @@ const vocabWords = [
     { french: "Le mois dernier", english: "Last month", accuracy: 0.0 },
     { french: "L'annee prochaine", english: "Next year", accuracy: 0.0 },
     { french: "Le week-end prochain", english: "Next weekend", accuracy: 0.0 },
-    { french: "Après-demain", english: "After tomorrow", accuracy: 0.0 },
+    { french: "Après-demain", english: "After tomorrow", accuracy: 0.2 },
     { french: "Hier", english: "Yesterday", accuracy: 0.0 },
     { french: "avant-hier", english: "Before yesterday", accuracy: 0.0 },
     { french: "Le premier jour", english: "The first day", accuracy: 0.0 },
@@ -128,7 +127,7 @@ const vocabWords = [
 
     // Cooking
     { french: "Couper", english: "To cut", accuracy: 0.0 },
-    { french: "Ajouter", english: "To add", accuracy: 0.0 },
+    { french: "Ajouter", english: "To add", accuracy: 0.2 },
     { french: "Verser", english: "To pour", accuracy: 0.0 },
     { french: "Melanger", english: "To mix", accuracy: 0.0 },
     { french: "Sortir du four", english: "To take out of the oven", accuracy: 0.0 },
@@ -152,9 +151,9 @@ const vocabWords = [
     { french: "Une boite", english: "A box", accuracy: 0.0 },
     { french: "Une tranche", english: "A slice", accuracy: 0.0 },
     { french: "Le riz", english: "Rice", accuracy: 0.0 },
-    { french: "Le pain", english: "Bread", accuracy: 0.0 },
+    { french: "Le pain", english: "Bread", accuracy: 0.2 },
     { french: "Les pates", english: "Pasta", accuracy: 0.0 },
-    { french: "Les pommes de terre", english: "Potatos", accuracy: 0.0 },
+    { french: "Les pommes de terre", english: "Potatos", accuracy: 0.2 },
 
     // Dietary
     { french: "Je suis allergique au…", english: "I am allergic to...", accuracy: 0.0 },

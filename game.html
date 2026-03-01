@@ -226,26 +226,26 @@
 <body>
     <!-- Menu Screen -->
     <div id="menu-screen">
-        <button id="new-game-btn">New Game</button>
+        <button id="new-game-btn">Nouveau Jeu</button>
     </div>
 
     <!-- Game Screen -->
     <div id="game-screen">
         <div id="player1-score" class="player-score">
             <div class="player-name-row">
-                <span class="player-name">Player 1</span>
+                <span class="player-name">Joueur 1</span>
                 <button class="edit-name-btn" onclick="editPlayerName(1)">Edit</button>
             </div>
             <div class="score">0</div>
-            <div class="wins">Wins: 0</div>
+            <div class="wins">Victoires: 0</div>
         </div>
         <div id="player2-score" class="player-score">
             <div class="player-name-row">
-                <span class="player-name">Player 2</span>
+                <span class="player-name">Joueur 2</span>
                 <button class="edit-name-btn" onclick="editPlayerName(2)">Edit</button>
             </div>
             <div class="score">0</div>
-            <div class="wins">Wins: 0</div>
+            <div class="wins">Victoires: 0</div>
         </div>
 
         <div id="game-area">
@@ -253,21 +253,21 @@
 
             <!-- Roll Phase -->
             <div id="roll-phase">
-                <button id="roll-btn">Roll</button>
+                <button id="roll-btn">Jouer</button>
                 <div id="dice-result"></div>
             </div>
 
             <!-- Question Phase -->
             <div id="question-phase">
-                <div id="rolled-value">You rolled: 0</div>
-                <div id="question-text">Vocab Question Here</div>
+                <div id="rolled-value">Tu as eu: 0</div>
+                <div id="question-text">Question Ici</div>
                 <div id="answer-buttons">
-                    <button id="correct-btn" class="answer-btn">Correct</button>
-                    <button id="wrong-btn" class="answer-btn">Wrong</button>
-                    <button id="split-btn" class="answer-btn">Split Points</button>
+                    <button id="correct-btn" class="answer-btn">Juste</button>
+                    <button id="wrong-btn" class="answer-btn">Faux</button>
+                    <button id="split-btn" class="answer-btn">Diviser les Points</button>
                 </div>
                 <div id="correct-answer"></div>
-                <button id="next-btn" class="answer-btn" style="display: none;">Next</button>
+                <button id="next-btn" class="answer-btn" style="display: none;">Prochain</button>
             </div>
         </div>
     </div>
@@ -279,14 +279,15 @@
         let currentPlayer = 1;
         let currentRoll = 0;
         let currentWord = null;
-        let player1Name = "Player 1";
-        let player2Name = "Player 2";
+        let player1Name = "Joueur 1";
+        let player2Name = "Joueur 2";
         let player1Wins = 0;
         let player2Wins = 0;
 
         // Load saved data from localStorage
         loadAccuracyScores();
         loadWins();
+        loadNames();
 
         function loadAccuracyScores() {
             const saved = localStorage.getItem('vocabAccuracy');
@@ -306,6 +307,13 @@
                 accuracyMap[word.french] = word.accuracy;
             });
             localStorage.setItem('vocabAccuracy', JSON.stringify(accuracyMap));
+
+            // Also save to words.js via server
+            fetch('/save-accuracy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(accuracyMap)
+            }).catch(err => console.log('Could not save to file:', err));
         }
 
         function loadWins() {
@@ -326,8 +334,26 @@
         }
 
         function updateWinsDisplay() {
-            document.querySelector('#player1-score .wins').textContent = `Wins: ${player1Wins}`;
-            document.querySelector('#player2-score .wins').textContent = `Wins: ${player2Wins}`;
+            document.querySelector('#player1-score .wins').textContent = `Victoires: ${player1Wins}`;
+            document.querySelector('#player2-score .wins').textContent = `Victoires: ${player2Wins}`;
+        }
+
+        function loadNames() {
+            const saved = localStorage.getItem('vocabNames');
+            if (saved) {
+                const names = JSON.parse(saved);
+                player1Name = names.player1 || "Joueur 1";
+                player2Name = names.player2 || "Joueur 2";
+                document.querySelector('#player1-score .player-name').textContent = player1Name;
+                document.querySelector('#player2-score .player-name').textContent = player2Name;
+            }
+        }
+
+        function saveNames() {
+            localStorage.setItem('vocabNames', JSON.stringify({
+                player1: player1Name,
+                player2: player2Name
+            }));
         }
 
         // DOM elements
@@ -379,6 +405,14 @@
             }, 1000);
         });
 
+        // Space bar to roll
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && rollPhase.style.display === 'block') {
+                e.preventDefault();
+                rollBtn.click();
+            }
+        });
+
         // Correct button
         correctBtn.addEventListener('click', () => {
             // Player 1 is learning - correct always gives points to Player 1
@@ -405,7 +439,7 @@
             }
 
             // Show the correct answer
-            correctAnswer.textContent = `Answer: ${currentWord.french}`;
+            correctAnswer.textContent = `Reponse: ${currentWord.french}`;
             correctAnswer.style.display = 'block';
             answerButtons.style.display = 'none';
             nextBtn.style.display = 'inline-block';
@@ -425,7 +459,7 @@
             }
 
             // Show the correct answer
-            correctAnswer.textContent = `Answer: ${currentWord.french}`;
+            correctAnswer.textContent = `Reponse: ${currentWord.french}`;
             correctAnswer.style.display = 'block';
             answerButtons.style.display = 'none';
             nextBtn.style.display = 'inline-block';
@@ -445,7 +479,7 @@
         function showQuestionPhase() {
             rollPhase.style.display = 'none';
             questionPhase.style.display = 'block';
-            rolledValue.textContent = `You rolled: ${currentRoll}`;
+            rolledValue.textContent = `Tu as eu: ${currentRoll}`;
 
             // Reset answer display
             answerButtons.style.display = 'block';
@@ -454,7 +488,7 @@
 
             // Pick a weighted random word (lower accuracy = more likely)
             currentWord = getWeightedRandomWord();
-            questionText.textContent = `How do you say "${currentWord.english}" in French?`;
+            questionText.textContent = `Comment on dit "${currentWord.english}" en Francais?`;
         }
 
         function getWeightedRandomWord() {
@@ -485,7 +519,7 @@
                 player1Wins++;
                 saveWins();
                 updateWinsDisplay();
-                alert(`${player1Name} Wins!`);
+                alert(`${player1Name} Gagne!`);
                 returnToMenu();
                 return;
             }
@@ -493,7 +527,7 @@
                 player2Wins++;
                 saveWins();
                 updateWinsDisplay();
-                alert(`${player2Name} Wins!`);
+                alert(`${player2Name} Gagne!`);
                 returnToMenu();
                 return;
             }
@@ -516,7 +550,7 @@
 
         function updateTurnDisplay() {
             const currentName = currentPlayer === 1 ? player1Name : player2Name;
-            currentTurnDisplay.textContent = `${currentName}'s Turn`;
+            currentTurnDisplay.textContent = `Au tour de ${currentName}`;
 
             // Highlight active player
             if (currentPlayer === 1) {
@@ -530,7 +564,7 @@
 
         function editPlayerName(playerNum) {
             const currentName = playerNum === 1 ? player1Name : player2Name;
-            const newName = prompt(`Enter new name for ${currentName}:`, currentName);
+            const newName = prompt(`Choisissez un nouveau nom pour ${currentName}:`, currentName);
 
             if (newName && newName.trim()) {
                 if (playerNum === 1) {
@@ -540,6 +574,7 @@
                     player2Name = newName.trim();
                     document.querySelector('#player2-score .player-name').textContent = player2Name;
                 }
+                saveNames();
                 updateTurnDisplay();
             }
         }
