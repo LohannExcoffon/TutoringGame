@@ -95,6 +95,12 @@
             font-size: 48px;
         }
 
+        .wins {
+            font-size: 16px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
         /* Game Area */
         #game-area {
             position: absolute;
@@ -183,6 +189,34 @@
             background-color: #c0392b;
         }
 
+        #split-btn {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        #split-btn:hover {
+            background-color: #d68910;
+        }
+
+        #next-btn {
+            background-color: #3498db;
+            color: white;
+        }
+
+        #next-btn:hover {
+            background-color: #2980b9;
+        }
+
+        #correct-answer {
+            display: none;
+            font-size: 24px;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #27ae60;
+            border-radius: 10px;
+            color: white;
+        }
+
         .active-player {
             border: 3px solid #f1c40f;
             border-radius: 10px;
@@ -203,6 +237,7 @@
                 <button class="edit-name-btn" onclick="editPlayerName(1)">Edit</button>
             </div>
             <div class="score">0</div>
+            <div class="wins">Wins: 0</div>
         </div>
         <div id="player2-score" class="player-score">
             <div class="player-name-row">
@@ -210,6 +245,7 @@
                 <button class="edit-name-btn" onclick="editPlayerName(2)">Edit</button>
             </div>
             <div class="score">0</div>
+            <div class="wins">Wins: 0</div>
         </div>
 
         <div id="game-area">
@@ -225,10 +261,13 @@
             <div id="question-phase">
                 <div id="rolled-value">You rolled: 0</div>
                 <div id="question-text">Vocab Question Here</div>
-                <div>
+                <div id="answer-buttons">
                     <button id="correct-btn" class="answer-btn">Correct</button>
                     <button id="wrong-btn" class="answer-btn">Wrong</button>
+                    <button id="split-btn" class="answer-btn">Split Points</button>
                 </div>
+                <div id="correct-answer"></div>
+                <button id="next-btn" class="answer-btn" style="display: none;">Next</button>
             </div>
         </div>
     </div>
@@ -242,6 +281,54 @@
         let currentWord = null;
         let player1Name = "Player 1";
         let player2Name = "Player 2";
+        let player1Wins = 0;
+        let player2Wins = 0;
+
+        // Load saved data from localStorage
+        loadAccuracyScores();
+        loadWins();
+
+        function loadAccuracyScores() {
+            const saved = localStorage.getItem('vocabAccuracy');
+            if (saved) {
+                const accuracyMap = JSON.parse(saved);
+                vocabWords.forEach(word => {
+                    if (accuracyMap[word.french] !== undefined) {
+                        word.accuracy = accuracyMap[word.french];
+                    }
+                });
+            }
+        }
+
+        function saveAccuracyScores() {
+            const accuracyMap = {};
+            vocabWords.forEach(word => {
+                accuracyMap[word.french] = word.accuracy;
+            });
+            localStorage.setItem('vocabAccuracy', JSON.stringify(accuracyMap));
+        }
+
+        function loadWins() {
+            const saved = localStorage.getItem('vocabWins');
+            if (saved) {
+                const wins = JSON.parse(saved);
+                player1Wins = wins.player1 || 0;
+                player2Wins = wins.player2 || 0;
+            }
+            updateWinsDisplay();
+        }
+
+        function saveWins() {
+            localStorage.setItem('vocabWins', JSON.stringify({
+                player1: player1Wins,
+                player2: player2Wins
+            }));
+        }
+
+        function updateWinsDisplay() {
+            document.querySelector('#player1-score .wins').textContent = `Wins: ${player1Wins}`;
+            document.querySelector('#player2-score .wins').textContent = `Wins: ${player2Wins}`;
+        }
 
         // DOM elements
         const menuScreen = document.getElementById('menu-screen');
@@ -258,6 +345,10 @@
         const player1ScoreDiv = document.getElementById('player1-score');
         const player2ScoreDiv = document.getElementById('player2-score');
         const questionText = document.getElementById('question-text');
+        const answerButtons = document.getElementById('answer-buttons');
+        const correctAnswer = document.getElementById('correct-answer');
+        const nextBtn = document.getElementById('next-btn');
+        const splitBtn = document.getElementById('split-btn');
 
         // Start new game
         newGameBtn.addEventListener('click', () => {
@@ -296,6 +387,7 @@
             // Increase accuracy of the word (max 1.0)
             if (currentWord) {
                 currentWord.accuracy = Math.min(1.0, currentWord.accuracy + 0.2);
+                saveAccuracyScores();
             }
 
             endTurn();
@@ -309,8 +401,38 @@
             // Decrease accuracy of the word (min 0.0)
             if (currentWord) {
                 currentWord.accuracy = Math.max(0.0, currentWord.accuracy - 0.1);
+                saveAccuracyScores();
             }
 
+            // Show the correct answer
+            correctAnswer.textContent = `Answer: ${currentWord.french}`;
+            correctAnswer.style.display = 'block';
+            answerButtons.style.display = 'none';
+            nextBtn.style.display = 'inline-block';
+        });
+
+        // Split button
+        splitBtn.addEventListener('click', () => {
+            // Split points between players
+            const halfPoints = Math.floor(currentRoll / 2);
+            player1Score += halfPoints;
+            player2Score += currentRoll - halfPoints;
+
+            // Decrease accuracy of the word as if wrong (min 0.0)
+            if (currentWord) {
+                currentWord.accuracy = Math.max(0.0, currentWord.accuracy - 0.1);
+                saveAccuracyScores();
+            }
+
+            // Show the correct answer
+            correctAnswer.textContent = `Answer: ${currentWord.french}`;
+            correctAnswer.style.display = 'block';
+            answerButtons.style.display = 'none';
+            nextBtn.style.display = 'inline-block';
+        });
+
+        // Next button
+        nextBtn.addEventListener('click', () => {
             endTurn();
         });
 
@@ -325,9 +447,14 @@
             questionPhase.style.display = 'block';
             rolledValue.textContent = `You rolled: ${currentRoll}`;
 
+            // Reset answer display
+            answerButtons.style.display = 'block';
+            correctAnswer.style.display = 'none';
+            nextBtn.style.display = 'none';
+
             // Pick a weighted random word (lower accuracy = more likely)
             currentWord = getWeightedRandomWord();
-            questionText.textContent = `What does "${currentWord.french}" mean?`;
+            questionText.textContent = `How do you say "${currentWord.english}" in French?`;
         }
 
         function getWeightedRandomWord() {
@@ -355,11 +482,17 @@
 
             // Check for winner
             if (player1Score >= 20) {
+                player1Wins++;
+                saveWins();
+                updateWinsDisplay();
                 alert(`${player1Name} Wins!`);
                 returnToMenu();
                 return;
             }
             if (player2Score >= 20) {
+                player2Wins++;
+                saveWins();
+                updateWinsDisplay();
                 alert(`${player2Name} Wins!`);
                 returnToMenu();
                 return;
