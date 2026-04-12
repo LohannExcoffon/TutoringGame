@@ -418,9 +418,9 @@
             // Player 1 is learning - correct always gives points to Player 1
             player1Score += currentRoll;
 
-            // Increase accuracy of the word (max 1.0)
+            // Increase accuracy of the word (max 0.9)
             if (currentWord) {
-                currentWord.accuracy = Math.min(1.0, currentWord.accuracy + 0.2);
+                currentWord.accuracy = Math.min(0.9, currentWord.accuracy + 0.2);
                 saveAccuracyScores();
             }
 
@@ -492,8 +492,10 @@
         }
 
         function getWeightedRandomWord() {
-            // Calculate weights: lower accuracy = higher weight
-            const weights = vocabWords.map(word => 1 - word.accuracy);
+            // Higher roll = stronger bias toward low-accuracy words
+            // Roll 1: exponent 1.0, Roll 6: exponent 3.0
+            const exponent = 1 + (currentRoll - 1) * 0.4;
+            const weights = vocabWords.map(word => Math.pow(1 - word.accuracy, exponent));
             const totalWeight = weights.reduce((sum, w) => sum + w, 0);
 
             // Pick a random value in the total weight range
