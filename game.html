@@ -142,6 +142,52 @@
             min-height: 80px;
         }
 
+        /* Daily Double Phase */
+        #daily-double-phase {
+            display: none;
+            text-align: center;
+        }
+
+        #daily-double-title {
+            font-size: 52px;
+            font-weight: bold;
+            color: #f1c40f;
+            text-shadow: 0 0 20px #f1c40f;
+            margin-bottom: 10px;
+            animation: pulse 0.8s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        #daily-double-roll {
+            font-size: 28px;
+            color: #aaa;
+            margin-bottom: 30px;
+        }
+
+        .multiplier-btn {
+            padding: 20px 35px;
+            font-size: 26px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.15s, background-color 0.2s;
+            font-weight: bold;
+        }
+
+        .multiplier-btn:hover {
+            transform: scale(1.08);
+        }
+
+        #no-risk-btn { background-color: #555; color: white; }
+        #no-risk-btn:hover { background-color: #777; }
+        #risk-btn { background-color: #f1c40f; color: #333; }
+        #risk-btn:hover { background-color: #d4ac0d; }
+
         /* Question Phase */
         #question-phase {
             display: none;
@@ -257,6 +303,14 @@
                 <div id="dice-result"></div>
             </div>
 
+            <!-- Daily Double Phase -->
+            <div id="daily-double-phase">
+                <div id="daily-double-title">DAILY DOUBLE!</div>
+                <div id="daily-double-roll"></div>
+                <button class="multiplier-btn" id="no-risk-btn">No Risk</button>
+                <button class="multiplier-btn" id="risk-btn">RISK x2</button>
+            </div>
+
             <!-- Question Phase -->
             <div id="question-phase">
                 <div id="rolled-value">Tu as eu: 0</div>
@@ -283,6 +337,7 @@
         let player2Name = "Joueur 2";
         let player1Wins = 0;
         let player2Wins = 0;
+        let currentMultiplier = 1;
 
         // Load saved data from localStorage
         loadAccuracyScores();
@@ -356,6 +411,18 @@
             }));
         }
 
+        // Daily Double DOM
+        const dailyDoublePhase = document.getElementById('daily-double-phase');
+        const dailyDoubleRoll = document.getElementById('daily-double-roll');
+        document.getElementById('no-risk-btn').addEventListener('click', () => pickMultiplier(1));
+        document.getElementById('risk-btn').addEventListener('click', () => pickMultiplier(2));
+
+        function pickMultiplier(mult) {
+            currentMultiplier = mult;
+            dailyDoublePhase.style.display = 'none';
+            showQuestionPhase();
+        }
+
         // DOM elements
         const menuScreen = document.getElementById('menu-screen');
         const gameScreen = document.getElementById('game-screen');
@@ -397,11 +464,17 @@
         // Roll button
         rollBtn.addEventListener('click', () => {
             currentRoll = Math.floor(Math.random() * 6) + 1;
+            currentMultiplier = 1;
             diceResult.textContent = currentRoll;
 
-            // After a short delay, show question phase
             setTimeout(() => {
-                showQuestionPhase();
+                if (Math.random() < 0.10) {
+                    rollPhase.style.display = 'none';
+                    dailyDoublePhase.style.display = 'block';
+                    dailyDoubleRoll.textContent = `Tu as eu: ${currentRoll} — Choisis ton multiplicateur!`;
+                } else {
+                    showQuestionPhase();
+                }
             }, 1000);
         });
 
@@ -416,7 +489,7 @@
         // Correct button
         correctBtn.addEventListener('click', () => {
             // Player 1 is learning - correct always gives points to Player 1
-            player1Score += currentRoll;
+            player1Score += Math.floor(currentRoll * currentMultiplier);
 
             // Increase accuracy of the word (max 0.9)
             if (currentWord) {
@@ -429,8 +502,14 @@
 
         // Wrong button
         wrongBtn.addEventListener('click', () => {
-            // Wrong always gives points to Player 2 (opponent)
-            player2Score += currentRoll;
+            const points = Math.floor(currentRoll * currentMultiplier);
+            if (currentMultiplier > 1) {
+                // Risked a multiplier — lose those points
+                player1Score = Math.max(0, player1Score - points);
+            } else {
+                // Normal wrong — points go to Player 2
+                player2Score += points;
+            }
 
             // Decrease accuracy of the word (min 0.0)
             if (currentWord) {
@@ -447,10 +526,15 @@
 
         // Split button
         splitBtn.addEventListener('click', () => {
-            // Split points between players
-            const halfPoints = Math.floor(currentRoll / 2);
-            player1Score += halfPoints;
-            player2Score += currentRoll - halfPoints;
+            const totalPoints = Math.floor(currentRoll * currentMultiplier);
+            const halfPoints = Math.floor(totalPoints / 2);
+            if (currentMultiplier > 1) {
+                // Gambled — lose half, opponent gets nothing extra
+                player1Score = Math.max(0, player1Score - halfPoints);
+            } else {
+                player1Score += halfPoints;
+                player2Score += totalPoints - halfPoints;
+            }
 
             // Decrease accuracy of the word as if wrong (min 0.0)
             if (currentWord) {
@@ -473,13 +557,17 @@
         function showRollPhase() {
             rollPhase.style.display = 'block';
             questionPhase.style.display = 'none';
+            dailyDoublePhase.style.display = 'none';
             diceResult.textContent = '';
         }
 
         function showQuestionPhase() {
             rollPhase.style.display = 'none';
             questionPhase.style.display = 'block';
-            rolledValue.textContent = `Tu as eu: ${currentRoll}`;
+            const effectivePoints = Math.floor(currentRoll * currentMultiplier);
+            rolledValue.textContent = currentMultiplier > 1
+                ? `Tu as eu: ${currentRoll} × ${currentMultiplier} = ${effectivePoints} pts`
+                : `Tu as eu: ${currentRoll}`;
 
             // Reset answer display
             answerButtons.style.display = 'block';
